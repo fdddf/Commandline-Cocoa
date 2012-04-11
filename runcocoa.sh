@@ -18,6 +18,8 @@ while [ "${1:0:1}" = "-" ]; do
 		ios=yes;
 	elif [ "$1" = "-nomain" ]; then
 		includemain=;
+	elif [ "$1" = "-file" ]; then
+		file="$2";
 	else
 		ccflags="$ccflags $1 $2";
 		shift;
@@ -25,9 +27,12 @@ while [ "${1:0:1}" = "-" ]; do
 	shift;
 done;
 
+# Read the code from the commandline or from a file
 commands=$*
 if [ ! "$commands" ]; then
 	commands="`cat`"
+elif [ "$file" ]; then
+	commands=`cat $file`
 fi
 
 if [ "$ios" ]; then
