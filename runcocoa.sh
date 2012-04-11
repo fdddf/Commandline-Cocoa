@@ -3,10 +3,14 @@
 # 
 # Michael Tyson, A Tasty Pixel <michael@atastypixel.com>
 #
+
+#  Check parameters and set settings
 ccflags="";
 includes="";
 usegdb=;
+usearc=yes;
 ios=;
+file=;
 includemain=yes;
 while [ "${1:0:1}" = "-" ]; do
 	if [ "$1" = "-include" ]; then
@@ -18,6 +22,8 @@ while [ "${1:0:1}" = "-" ]; do
 		ios=yes;
 	elif [ "$1" = "-nomain" ]; then
 		includemain=;
+	elif [ "$1" = "-noarc" ]; then
+		usearc=;
 	elif [ "$1" = "-file" ]; then
 		file="$2";
 	else
@@ -41,16 +47,28 @@ else
 	printf -v includes "$includes\n#import <Cocoa/Cocoa.h>";
 fi
 
+# Use the appropriate template
 if [ "$includemain" ]; then
-	cat > /tmp/runcocoa.m <<-EOF
+	if [ "$usearc" ]; then
+		cat > /tmp/runcocoa.m <<-EOF
+		$includes
+		int main(int argc, char *argv[]) {
+			@autoreleasepool {
+			  $commands;  
+			}
+		}
+		EOF
+	else
+		cat > /tmp/runcocoa.m <<-EOF
 		$includes
 		int main (int argc, const char * argv[]) {
-		  NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-		  $commands;
-		  [pool drain];
-		  return 0;
+			NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+		  	$commands;
+		  	[pool drain];
+		  	return 0;
 		}
-	EOF
+		EOF
+	fi
 else
 	cat > /tmp/runcocoa.m <<-EOF
 		$includes
@@ -68,6 +86,9 @@ if [ "$ios" ]; then
 else
 	export MACOSX_DEPLOYMENT_TARGET=10.6
 	compiler="/usr/bin/env clang -O0 -std=c99 -framework Foundation -framework Cocoa";
+	if [ "$usearc" ]; then
+		compiler=$compiler" -fobjc-arc";
+	fi
 fi
 
 if ! $compiler /tmp/runcocoa.m $ccflags -o /tmp/runcocoa-output; then
