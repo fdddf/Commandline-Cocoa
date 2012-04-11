@@ -41,20 +41,20 @@ else
 fi
 
 if [ "$includemain" ]; then
-cat > /tmp/runcocoa.m << EOF
-$includes
-int main (int argc, const char * argv[]) {
-  NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-  $commands;
-  [pool drain];
-  return 0;
-}
-EOF
+	cat > /tmp/runcocoa.m <<-EOF
+		$includes
+		int main (int argc, const char * argv[]) {
+		  NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+		  $commands;
+		  [pool drain];
+		  return 0;
+		}
+	EOF
 else
-cat > /tmp/runcocoa.m << EOF
-$includes
-$commands;
-EOF
+	cat > /tmp/runcocoa.m <<-EOF
+		$includes
+		$commands;
+	EOF
 fi
 
 if [ "$ios" ]; then
