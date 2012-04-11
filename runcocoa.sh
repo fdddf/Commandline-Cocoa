@@ -58,18 +58,18 @@ else
 fi
 
 if [ "$ios" ]; then
-	export MACOSX_DEPLOYMENT_TARGET=10.6
 	export PATH="/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-	gcc="/usr/bin/env llvm-gcc \
+	compiler="/usr/bin/env llvm-gcc \
 				-x objective-c -arch i386 -fmessage-length=0 -pipe -std=c99 -fpascal-strings -O0 \
 				-isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator4.2.sdk -fexceptions -fasm-blocks \
 				-mmacosx-version-min=10.6 -gdwarf-2 -fvisibility=hidden -fobjc-abi-version=2 -fobjc-legacy-dispatch -D__IPHONE_OS_VERSION_MIN_REQUIRED=40000 \
 				-Xlinker -objc_abi_version -Xlinker 2 -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText";
 else
-	gcc="/usr/bin/env gcc -O0 -framework Foundation -framework Cocoa";
+	export MACOSX_DEPLOYMENT_TARGET=10.6
+	compiler="/usr/bin/env clang -O0 -std=c99 -framework Foundation -framework Cocoa";
 fi
 
-if ! $gcc /tmp/runcocoa.m $ccflags -o /tmp/runcocoa-output; then
+if ! $compiler /tmp/runcocoa.m $ccflags -o /tmp/runcocoa-output; then
 	exit 1;
 fi
 
