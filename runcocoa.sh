@@ -11,8 +11,7 @@ includemain=yes;
 while [ "${1:0:1}" = "-" ]; do
 	if [ "$1" = "-include" ]; then
 		shift;
-		includes="$includes
-#import <$1>";
+		printf -v includes "$includes\n#import <$1>";
 	elif [ "$1" = "-gdb" ]; then
 		usegdb=yes;
 	elif [ "$1" = "-ios" ]; then
@@ -32,12 +31,9 @@ if [ ! "$commands" ]; then
 fi
 
 if [ "$ios" ]; then
-	includes="$includes
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>"
+	printf -v includes "$includes\n#import <Foundation/Foundation.h>\n#import <UIKit/UIKit.h>";
 else
-	includes="$includes
-#import <Cocoa/Cocoa.h>";
+	printf -v includes "$includes\n#import <Cocoa/Cocoa.h>";
 fi
 
 if [ "$includemain" ]; then
