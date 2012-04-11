@@ -58,10 +58,10 @@ else
 fi
 
 if [ "$ios" ]; then
-	export PATH="/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+	export PATH="/Applications/Xcode.app/Contents/iPhoneSimulator.platform/Developer/usr/bin:/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 	compiler="/usr/bin/env llvm-gcc \
 				-x objective-c -arch i386 -fmessage-length=0 -pipe -std=c99 -fpascal-strings -O0 \
-				-isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator4.2.sdk -fexceptions -fasm-blocks \
+				-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.1.sdk -fexceptions -fasm-blocks \
 				-mmacosx-version-min=10.6 -gdwarf-2 -fvisibility=hidden -fobjc-abi-version=2 -fobjc-legacy-dispatch -D__IPHONE_OS_VERSION_MIN_REQUIRED=40000 \
 				-Xlinker -objc_abi_version -Xlinker 2 -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText";
 else
@@ -74,7 +74,7 @@ if ! $compiler /tmp/runcocoa.m $ccflags -o /tmp/runcocoa-output; then
 fi
 
 if [ "$ios" ]; then
-	DYLD_ROOT_PATH="/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator4.2.sdk" /tmp/runcocoa-output
+	DYLD_ROOT_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.1.sdk" /tmp/runcocoa-output
 elif [ "$usegdb" ]; then
 	echo 'run; bt;' > /tmp/runcocoa-gdb
 	gdb -x /tmp/runcocoa-gdb -e /tmp/runcocoa-output
