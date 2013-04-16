@@ -3,21 +3,29 @@
 # 
 # Michael Tyson, A Tasty Pixel <michael@atastypixel.com>
 #
+# modifications by: maicki, xinsight
 
 #  Check parameters and set settings
 ccflags="";
 includes="";
 usegdb=;
-usearc=yes;
+uselldb=;
+usearc=;
 ios=;
+iossdk="6.1";
+iossdkpath=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${iossdk}.sdk
 file=;
 includemain=yes;
+
 while [ "${1:0:1}" = "-" ]; do
 	if [ "$1" = "-include" ]; then
 		shift;
 		printf -v includes "$includes\n#import <$1>";
 	elif [ "$1" = "-gdb" ]; then
 		usegdb=yes;
+	elif [ "$1" = "-lldb" ]; then
+		uselldb=yes;
+		usegdb=;
 	elif [ "$1" = "-ios" ]; then
 		ios=yes;
 	elif [ "$1" = "-nomain" ]; then
@@ -33,16 +41,14 @@ while [ "${1:0:1}" = "-" ]; do
 	shift;
 done;
 
-# Read the code from the commandline or from a file
+# Read the code from a file
 commands=$*
-if [ ! "$commands" ]; then
-	commands="`cat`"
-elif [ "$file" ]; then
+if [ "$file" ]; then
 	commands=`cat $file`
 fi
 
 if [ "$ios" ]; then
-	printf -v includes "$includes\n#import <Foundation/Foundation.h>\n#import <UIKit/UIKit.h>";
+	printf -v includes "$includes\n#import <UIKit/UIKit.h>";
 else
 	printf -v includes "$includes\n#import <Cocoa/Cocoa.h>";
 fi
@@ -77,31 +83,54 @@ else
 fi
 
 if [ "$ios" ]; then
-	export PATH="/Applications/Xcode.app/Contents/iPhoneSimulator.platform/Developer/usr/bin:/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+  if [ ! -d $iossdkpath ]; then
+    echo "iOS SDK not found: ${iossdkpath}";
+    exit 1;
+  fi
+
 	compiler="/usr/bin/env llvm-gcc \
 				-x objective-c -arch i386 -fmessage-length=0 -pipe -std=c99 -fpascal-strings -O0 \
-				-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.1.sdk -fexceptions -fasm-blocks \
+				-isysroot ${iossdkpath} -fexceptions -fasm-blocks \
 				-mmacosx-version-min=10.6 -gdwarf-2 -fvisibility=hidden -fobjc-abi-version=2 -fobjc-legacy-dispatch -D__IPHONE_OS_VERSION_MIN_REQUIRED=40000 \
 				-Xlinker -objc_abi_version -Xlinker 2 -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText";
+
 else
 	export MACOSX_DEPLOYMENT_TARGET=10.6
 	compiler="/usr/bin/env clang -O0 -std=c99 -framework Foundation -framework Cocoa";
-	if [ "$usearc" ]; then
-		compiler=$compiler" -fobjc-arc";
-	fi
+fi
+
+if [ "$usearc" ]; then
+	compiler=$compiler" -fobjc-arc";
 fi
 
 if ! $compiler /tmp/runcocoa.m $ccflags -o /tmp/runcocoa-output; then
 	exit 1;
 fi
 
-if [ "$ios" ]; then
-	DYLD_ROOT_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.1.sdk" /tmp/runcocoa-output
-elif [ "$usegdb" ]; then
-	echo 'run; bt;' > /tmp/runcocoa-gdb
-	gdb -x /tmp/runcocoa-gdb -e /tmp/runcocoa-output
-	rm /tmp/runcocoa-gdb
+if [ "$usegdb" ]; then
+  DBCMD=/tmp/runcocoa-gdb
+  # start interactive gdb session. main is not initially defined
+	cat > $DBCMD << EOF
+set breakpoint pending on
+break main
+run
+EOF
+  gdb -x $DBCMD /tmp/runcocoa-output
+  rm $DBCMD
+elif [ "$uselldb" ]; then
+  # lldb can only execute commands from .lldbinit ?
+  cat > .lldbinit << EOF
+b main
+run
+EOF
+	DYLD_ROOT_PATH="${iossdkpath}" lldb /tmp/runcocoa-output
+  rm .lldbinit
 else
-	/tmp/runcocoa-output
+  if [ "$ios" ]; then
+	  DYLD_ROOT_PATH="${iossdkpath}" /tmp/runcocoa-output
+  else
+	  /tmp/runcocoa-output
+  fi
 fi
 rm /tmp/runcocoa-output /tmp/runcocoa.m 2>/dev/null

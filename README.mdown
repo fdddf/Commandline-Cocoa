@@ -16,7 +16,7 @@ Usage
 
 You can invoke it either by specifying the code to execute on the command line as a parameter, or through standard input, so you can pipe stuff to it. This is particularly convenient for use with TextMate: Type some code, hit Cmd-Option-R, type “runcocoa”, hit enter, and the result appears as a tooltip.
 
-You can include other frameworks (use "-include AudioToolbox/AudioToolbox.h -framework AudioToolbox" as command line arguments, for example), and run the code in gdb (with -gdb as a command-line argument).
+You can include other frameworks (use "-include AudioToolbox/AudioToolbox.h -framework AudioToolbox" as command line arguments, for example), or launch an interactive debugger (with -lldb or -gdb as a command-line arguments).
 
 You can also run it as iOS code by supplying the -ios commandline parameter.
 
@@ -24,9 +24,14 @@ Any other libraries to link in can be specified — command line arguments will 
 
 Normally, all code is wrapped in a standard main routine.  To add classes and do more advanced things, add the -nomain parameter, and add your own main routine.
 
-ARC is activated by default. If you would like to run Cocoa code that is not written with ARC support, just add the -noarc parameter.
+ARC is activated by default. If you would like to run Cocoa code that is not written with ARC support, add the -noarc parameter.
 
 If you would like to use a file as input, add the -file <file> parameter at the end.
+
+To launch an interactive debugging session, use: -gdb or -lldb
+
+   
+
 
 ### runc.sh
 
@@ -41,12 +46,31 @@ Make the scripts executable (`chmod +x runcocoa.sh runc.sh`), and copy them to `
 Examples
 --------
 
-This prints out a formatted version of the date, using NSDateFormatter:
+Print out a formatted version of the date, using NSDateFormatter:
 
     $ runcocoa 'NSDateFormatter *formatter = [[NSDateFormatter alloc] init]; [formatter setDateFormat:@"d MMM, h:mm a"]; NSLog(@"%@", [formatter stringFromDate:[NSDate date]]);'
 
     2011-02-23 20:02:10.313 runcocoa-output[28025:903] 23 Feb, 8:02 PM
 
-This creates an image compositing A Tasty Pixel's favicon onto a white circle, and saves it to output.png in the current directory using iOS's UIGraphicsBeginImageContext utility:
+Open an interactive debugging session:
 
-    runcocoa -ios -noarc 'UIGraphicsBeginImageContext(CGSizeMake(100,100)); CGContextRef ctx = UIGraphicsGetCurrentContext(); CGContextSetFillColorWithColor(ctx,[[UIColor whiteColor] CGColor]); CGContextBeginPath(ctx); CGContextMoveToPoint(ctx, 50, 0); CGContextAddArc(ctx, 50, 50, 50, M_PI/2.0, M_PI/2.0 + (2*M_PI), 0); CGContextFillPath(ctx); UIImage *icon = [UIImage imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:@"http://atastypixel.com/favicon.ico"]]]; [icon drawAtPoint:CGPointMake((100-[icon size].width)/2.0,(100-[icon size].height)/2.0)]; UIImage *i = UIGraphicsGetImageFromCurrentImageContext(); UIGraphicsEndImageContext(); [UIImagePNGRepresentation(i) writeToFile:@"output.png" atomically:NO];'; open output.png;
+    $ runcocoa.sh -lldb
+    (lldb) po [@"abc" uppercaseString]
+    (id) $1 = 0x0000000100b10a90 ABC
+
+    $ runcocoa.sh -gdb
+    (gdb) po [@"abc" uppercaseString]
+    ABC
+
+Use an iOS-specific class:
+
+    $ runcocoa.sh -ios 'NSLog(@"%@", [[UIView alloc] init])'
+    <UIView: 0x7114330; frame = (0 0; 0 0); layer = <CALayer: 0x7114580>>
+
+Create an image compositing A Tasty Pixel's favicon onto a white circle, and saves it to output.png in the current directory using iOS's UIGraphicsBeginImageContext utility:
+
+    runcocoa.sh -ios -noarc 'UIGraphicsBeginImageContext(CGSizeMake(100,100)); CGContextRef ctx = UIGraphicsGetCurrentContext(); CGContextSetFillColorWithColor(ctx,[[UIColor whiteColor] CGColor]); CGContextBeginPath(ctx); CGContextMoveToPoint(ctx, 50, 0); CGContextAddArc(ctx, 50, 50, 50, M_PI/2.0, M_PI/2.0 + (2*M_PI), 0); CGContextFillPath(ctx); UIImage *icon = [UIImage imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:@"http://atastypixel.com/favicon.ico"]]]; [icon drawAtPoint:CGPointMake((100-[icon size].width)/2.0,(100-[icon size].height)/2.0)]; UIImage *i = UIGraphicsGetImageFromCurrentImageContext(); UIGraphicsEndImageContext(); [UIImagePNGRepresentation(i) writeToFile:@"output.png" atomically:NO];'; open output.png;
+
+
+
+
